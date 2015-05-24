@@ -7,7 +7,10 @@ import (
 	"strings"
 )
 
-const ManifestPath string = "/Users/jonathangerber/manifest"
+/*
+environ - retrieve environment related paths
+
+*/
 
 // GetManifestSearchPathFor - returns the search path for
 // the provided package

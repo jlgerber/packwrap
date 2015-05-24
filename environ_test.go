@@ -92,7 +92,7 @@ func TestEnviron_GetManifestPathSearchPathFor(t *testing.T) {
 	ver := "14.0.335"
 	spath := GetManifestSearchPathFor(app, ver)
 
-	if spath != "/var/tmp/manifest:/Users/jonathangerber/manifest" {
+	if spath != "/var/tmp/manifest:/packages/manifest" {
 		t.Errorf("Incorrect Search Path:%s", spath)
 	}
 	//restore environment
