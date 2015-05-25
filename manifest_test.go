@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -44,9 +45,12 @@ func TestMain(m *testing.M) {
 
 	manifestContents := []byte(
 		`{ 
-		"name":"houdini"
-		"version":"14.0.335"
-		"basepath":"/Library/Frameworks/Houdini.framework/Versions/14.0.335/Resources"
+		"name":"houdini",
+		"schema":1,
+		"major":14,
+		"minor":0,
+		"micro":335,
+		"basepath":"/Library/Frameworks/Houdini.framework/Versions/14.0.335/Resources",
 		"environ": {
 			"HFS":"$$basepath",
 			"H": "${HFS}",
@@ -57,11 +61,11 @@ func TestMain(m *testing.M) {
 			"HHC":"${HH}/config",
 			"HT":"${H}/toolkit",
 			"HSB":"${HH}/sbin",
-			"TEMP":"/tmp"
+			"TEMP":"/tmp",
 			"JAVA_HOME":"/Library/Java/Home",
 			"HOUDINI_MAJOR_RELEASE":"14",
 			"HOUDINI_MINOR_RELEASE":"0",
-			"HOUDINI_BUILD_VERSION":"335"
+			"HOUDINI_BUILD_VERSION":"335",
 			"HOUDINI_VERSION":"${HOUDINI_MAJOR_RELEASE}.${HOUDINI_MINOR_RELEASE}.${HOUDINI_BUILD_VERSION}",
 			"HOUDINI_BUILD_KERNEL":"XXX_BUILD_KERNEL_XXX",
 			"HOUDINI_BUILD_PLATFORM":"XXX_BUILD_PLATFORM_XXX",
@@ -111,4 +115,93 @@ func TestManifest_GetManifestLocationFor(t *testing.T) {
 	if manifest != fmt.Sprintf("%s/%s/%s/manifest.json", testpath, app, ver) {
 		t.Errorf("manifest path incorrect:%s", manifest)
 	}
+}
+
+func TestManifest_NewManifestFromJsonByteSlice(t *testing.T) {
+	md := []byte(`{"name":"houdini",
+		"major":14,
+		"minor":0,
+		"micro":335,
+		"url":"http://blabla",
+		"environ":{"H":"/foo/bar/bla","HBIN":"${H}/bin"}}`)
+	_, err := NewManifestFromJsonByteSlice(md)
+	if err != nil {
+		t.Error(err)
+
+	}
+
+}
+
+func getManifestStringField(v *Manifest, field string) string {
+	r := reflect.ValueOf(v)
+	f := reflect.Indirect(r).FieldByName(field)
+	return string(f.String())
+}
+
+func getManifestIntField(v *Manifest, field string) uint16 {
+	r := reflect.ValueOf(v)
+	f := reflect.Indirect(r).FieldByName(field)
+	return uint16(f.Uint())
+}
+
+func TestManifest_NewManifestFromJsonFile(t *testing.T) {
+	jsonFile := "/packages/manifest/houdini/14.0.335/manifest.json"
+	manifest, err := NewManifestFromJsonFile(jsonFile)
+	if err != nil {
+		t.Error(err)
+
+	}
+
+	strtests := map[string]string{
+		"Name":     "houdini",
+		"Basepath": "/Library/Frameworks/Houdini.framework/Versions/14.0.335/Resources",
+	}
+
+	for key, strtest := range strtests {
+		if strtest != getManifestStringField(manifest, key) {
+			t.Errorf("%s does not match", key)
+		}
+	}
+
+	inttests := map[string]uint16{
+		"Major": 14,
+		"Minor": 0,
+		"Micro": 335,
+	}
+
+	for key, inttest := range inttests {
+		tmp := getManifestIntField(manifest, key)
+		if tmp != inttest {
+			t.Errorf("%s does not match", key)
+		}
+	}
+
+	envtests := map[string]string{
+		"HFS":                    "$$basepath",
+		"H":                      "${HFS}",
+		"HB":                     "${H}/bin",
+		"HDSO":                   "${H}/../Libraries",
+		"HD":                     "${H}/demo",
+		"HH":                     "${H}/houdini",
+		"HHC":                    "${HH}/config",
+		"HT":                     "${H}/toolkit",
+		"HSB":                    "${HH}/sbin",
+		"TEMP":                   "/tmp",
+		"JAVA_HOME":              "/Library/Java/Home",
+		"HOUDINI_MAJOR_RELEASE":  "14",
+		"HOUDINI_MINOR_RELEASE":  "0",
+		"HOUDINI_BUILD_VERSION":  "335",
+		"HOUDINI_VERSION":        "${HOUDINI_MAJOR_RELEASE}.${HOUDINI_MINOR_RELEASE}.${HOUDINI_BUILD_VERSION}",
+		"HOUDINI_BUILD_KERNEL":   "XXX_BUILD_KERNEL_XXX",
+		"HOUDINI_BUILD_PLATFORM": "XXX_BUILD_PLATFORM_XXX",
+		"HOUDINI_BUILD_COMPILER": "XXX_BUILD_COMPILER_XXX",
+	}
+
+	for key, strtest := range envtests {
+		if strtest != manifest.Environ[key] {
+			t.Errorf("%s does not match", key)
+		}
+	}
+	var _ = envtests
+
 }
