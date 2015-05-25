@@ -202,6 +202,5 @@ func TestManifest_NewManifestFromJsonFile(t *testing.T) {
 			t.Errorf("%s does not match", key)
 		}
 	}
-	var _ = envtests
 
 }
