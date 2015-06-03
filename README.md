@@ -1,5 +1,7 @@
 # Packwrap - Package/Wrapper system
 
+I am going to say up front that this is a simple DCC wrapper system circa 2000. It would have been written in Perl, and it would have been more full featured than this. However, it is a fairly mindless vehicle to play with Golang. And it is fine for home...
+
 ## Introduction
 
 Packwrap is designed to solve a couple of common problems in VFX. Namely, it aims to handle environment initialization, application invocation, tool chain creation.
