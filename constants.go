@@ -15,14 +15,23 @@ const VERSION_TEMPLATE_STRING string = "{{.Major}}.{{.Minor}}.{{.Micro}}"
 
 const MANIFEST_TEMPLATE_STRING string = `
 { 
+	"schema": 1, // do not remove! 
+
+	// The name of the executable
 	"name":"",
+
 	// major version - an integer is expected
 	"major": , 
+	
 	// minor version - an integer is expected
 	"minor": ,
+	
 	// micro version - an integer is expected
 	"micro": ,
-	"basepath":"", // path to executable
+	
+	// path to executable
+	"basepath":"", 
+
 	// The environ list consists of key value pairs, 
 	// in order, key first, then value. We use a list rather than a map because
 	// we need to preserve the order of the values. You may either use 
@@ -34,8 +43,8 @@ const MANIFEST_TEMPLATE_STRING string = `
 	//  	"maya","$$basepath/$$name"
 	// ]
 	"environ" : [
-		"<key>","<value>",
-		
+		// "key1", "value1",
+		// "key2", "value2",
 	]
 }
 `
