@@ -17,10 +17,10 @@ The first problem packwrap tackles is coming up with a system for initializing t
 
 ### example execution
 
-paw run maya 2014.0.0
-paw run  houdini 14.0.335
-paw list
-paw versions maya
+* paw run maya 2014.0.0
+* paw run  houdini 14.0.335
+* paw list
+* paw versions maya
 
 ### example structure
 
