@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 )
 
-// packages
-
+// GetPackageList - function to return a list of packages which exist in one
+// of the manifest directories.
 func GetPackageList() []string {
 	rl := []string{}
 	searchPath := GetManifestSearchPath()

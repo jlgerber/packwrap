@@ -26,23 +26,6 @@ func GetManifestSearchPath() []string {
 	return strings.Split(manifestPath, ":")
 }
 
-// PackageVersion - struct which holds information about a package
-type PackageVersion struct {
-	Name     string // The name of the package
-	Version  string // the version string
-	Location string // the location of the version
-}
-
-// NewPackageVersion - constructor
-func NewPackageVersion(name, version, location string) *PackageVersion {
-	pv := PackageVersion{name, version, location}
-	return &pv
-}
-
-func (p *PackageVersion) String() string {
-	return fmt.Sprintf("%s-%s %s", p.Name, p.Version, p.Location)
-}
-
 // GetPackageVersions - given a package name, find all of the versions
 // of the package and return them as a list
 func GetPackageVersions(packageName string) []*PackageVersion {
@@ -125,10 +108,17 @@ func NewManifestFor(packageName, packageVersion string) (*Manifest, error) {
 //---------------------------
 // methods
 //---------------------------
+
+// String - method returns a string represnetation of a Manifest
 func (m *Manifest) String() string {
 	rs := fmt.Sprintf("%s-%s\n", m.Name, m.Version())
-	for key, val := range m.Environ {
-		rs += fmt.Sprintf("\t%s=%s\n", key, val)
+	key := ""
+	for idx, val := range m.Environ {
+		if idx%2 == 0 {
+			key = val
+		} else {
+			rs += fmt.Sprintf("\t%s=%s\n", key, val)
+		}
 	}
 	return rs
 }
@@ -156,25 +146,80 @@ func (m *Manifest) Version() string {
 	return outp.String()
 }
 
+// func (m *Manifest) ReplaceLocalVarsOld(s string) string {
+// 	vals := strings.Fields(s)
+// 	for i := range vals {
+// 		if strings.HasPrefix(vals[i], "$$") {
+// 			lookup := strings.Title(string(vals[i][2:]))
+// 			newval, err := m.GetStringField(lookup)
+// 			if err != nil {
+// 				panic(err)
+// 			}
+// 			vals[i] = newval
+// 		}
+// 	}
+
+// 	newstr := strings.Join(vals, " ")
+// 	return newstr
+// }
+
+// replacement function
 // ReplaceLocalVars - given a string with one or more
 // local variables, prefixed by $$, replace them by
 // looking up their value in the manifest and return
 // the new string.
 func (m *Manifest) ReplaceLocalVars(s string) string {
-	vals := strings.Fields(s)
-	for i := range vals {
-		if strings.HasPrefix(vals[i], "$$") {
-			lookup := strings.Title(string(vals[i][2:]))
+
+	ret, idxF, idxB, inVar := "", 0, 0, false
+
+	for i, r := range s {
+		if inVar == true {
+			if string(r) == "/" || string(r) == ":" {
+
+				lookup := strings.Title(strings.Trim(string(s[idxB+1:i]), "$"))
+				newval, err := m.GetStringField(lookup)
+
+				if err != nil {
+					panic(err.Error() + lookup)
+				}
+
+				ret += newval
+
+				idxB, idxF, inVar = i, i, false
+			}
+		} else if string(r) == "$" && string(s[i+1]) == "$" {
+			ret = ret + s[idxB:idxF]
+			idxB = idxF
+
+			log.Debug("idxB ", idxB, "idxF ", idxF, " s ", s)
+
+			inVar = true
+		} else {
+			idxF = i
+		}
+	}
+	// we have reached the end. account for the remaining data
+	if idxB < len(s)-1 {
+		log.Debug("End of loop idxB", idxB, " last idx of s ", len(s)-1)
+		// once last lookup
+		if inVar == true {
+			log.Debug("End of loop inVar is true")
+
+			lookup := strings.Title(strings.Trim(string(s[idxB+1:len(s)]), "$"))
+
+			log.Debug("Attempting to get field for >", lookup, "<")
+
 			newval, err := m.GetStringField(lookup)
 			if err != nil {
-				panic(err)
+				panic(err.Error() + lookup)
 			}
-			vals[i] = newval
+			ret = ret + newval
+		} else {
+			ret = ret + s[idxB:]
 		}
 	}
 
-	newstr := strings.Join(vals, " ")
-	return newstr
+	return ret
 }
 
 // Setenv - set the environment of the current process based on the
@@ -204,7 +249,8 @@ func (m *Manifest) Setenv() error {
 	return nil
 }
 
-//
+// Getenv - method retrieves the environment values from the Manifest,
+// resolving shell and manifest variables....
 func (m *Manifest) Getenv() []string {
 	var key, value string
 	var ret []string

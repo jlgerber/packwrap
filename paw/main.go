@@ -2,14 +2,14 @@ package main
 
 import (
 	"bufio"
-	"bytes"
+	//"bytes"
 	"errors"
 	"fmt"
 	"github.com/docopt/docopt-go"
 	"github.com/jlgerber/packwrap"
 	"os"
 	"os/exec"
-	"strings"
+	//"strings"
 )
 
 var log = packwrap.GetLogger()
@@ -38,7 +38,7 @@ paw subcommands:
    template   Prints the manifest template.
    `
 
-	args, err := docopt.Parse(usage, nil, false, "", false)
+	args, err := docopt.Parse(usage, nil, true, "", false)
 
 	if err != nil {
 		fmt.Println("problem with docopt")
@@ -75,6 +75,7 @@ paw subcommands:
 
 }
 
+// runCommand - this function routes to the appropriate function
 func runCommand(cmd string, args []string) (err error) {
 	//argv := make([]string, 1)
 	//argv[0] = cmd
@@ -98,6 +99,8 @@ func runCommand(cmd string, args []string) (err error) {
 	return errors.New(fmt.Sprintf("%s is not a paw command. See 'paw help'", cmd))
 }
 
+// readLines - helper function to slurp in a text file and return a list of
+// lines, a la python.
 func readLines(path string) ([]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -113,6 +116,8 @@ func readLines(path string) ([]string, error) {
 	return lines, scanner.Err()
 }
 
+// printManifest - Given the name and version of a particular executable, find its
+// manifest and print its contents.
 func printManifest(args []string) error {
 	if len(args) < 2 {
 		err := errors.New("wrong number of arguements. paw run <package> <version>")
@@ -137,21 +142,25 @@ func printManifest(args []string) error {
 	return nil
 }
 
+// pawList - List the packages in the system.
 func pawList(args []string) error {
 	lst := packwrap.GetPackageList()
+	fmt.Println()
 	for _, pack := range lst {
 		fmt.Println(pack)
 	}
 	return nil
 }
 
+// pawVersions - Lists package versions for a named package supplied as
+// the first arugment.
 func pawVersions(args []string) error {
 	versions := packwrap.GetPackageVersions(args[0])
 	if versions == nil {
 		log.Info("No Package Versions Found for ", args[0])
 		return nil
 	}
-
+	fmt.Println()
 	for _, version := range versions {
 		fmt.Println(version)
 	}
@@ -159,6 +168,10 @@ func pawVersions(args []string) error {
 	return nil
 }
 
+// pawRun - Runs a version of an executable, as specified in the args input.
+// Minimally, the args input consists of an executable name, and a version. This
+// fucntion initializes the environment based on a manifest for the supplied package
+// and version, and then executes it in a separate process.
 func pawRun(args []string) error {
 	if len(args) < 2 {
 		err := errors.New("wrong number of arguements. paw run <package> <version>")
@@ -182,22 +195,18 @@ func pawRun(args []string) error {
 	}
 
 	cmd := exec.Command(manifest.Name, remainingArgs...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	log.Info("Running", manifest.Name, " Version: ", manifest.Version())
 	log.Info(manifest.Name, remainingArgs)
 
-	var out bytes.Buffer
-	cmd.Stdout = &out
 	err = cmd.Run()
 	if err != nil {
 		log.Fatal(err)
 
 	}
 
-	outlines := strings.Split(out.String(), "\n")
-	for ln := range outlines {
-		log.Info(outlines[ln])
-	}
 	return nil
 }
 
