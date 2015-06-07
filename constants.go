@@ -9,6 +9,11 @@ const Extension string = ".json"
 // default location for manifest files
 const DEFAULT_MANIFEST_LOCATION string = "/packages/manifest"
 
+// list of valid shells we support for the shell subcommand. arrays cannot be const in golang
+var VALID_SHELLS = []string{"bash", "tcsh"}
+
+const DEFAULT_SHELL = "bash"
+
 // default golang template string. This should encode
 // major minor and micro...
 const VERSION_TEMPLATE_STRING string = "{{.Major}}.{{.Minor}}.{{.Micro}}"

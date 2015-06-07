@@ -15,8 +15,7 @@ import (
 var log = packwrap.GetLogger()
 
 func main() {
-	usage := `Usage: paw [-h | --help] [-d | --debug] [-q | --quiet ] [-l | --loglevel=<level>] 
-           <command> [<args>...]
+	usage := `Usage: paw [options] <command> [<args>...]
 
 Paw - PAckage Wrapper system, which provides a mechanism for defining clean, controlled
 package environment upon launching an application.The system uses package manifest 
@@ -36,9 +35,10 @@ paw subcommands:
    env        Print the environment for a package.
    print      Prints the manifest for a package version.
    template   Prints the manifest template.
+   shell      Drop down into a subshell with appropriate environment.
    `
 
-	args, err := docopt.Parse(usage, nil, true, "", false)
+	args, err := docopt.Parse(usage, nil, true, "", true)
 
 	if err != nil {
 		fmt.Println("problem with docopt")
@@ -46,14 +46,33 @@ paw subcommands:
 		os.Exit(1)
 	}
 
+	if args["--help"].(bool) == true {
+		fmt.Println(usage)
+		os.Exit(0)
+	}
+
 	cmd := args["<command>"].(string)
 	cmdArgs := args["<args>"].([]string)
 
 	// set the logging level if passed in
-	if level := args["--loglevel"].([]string); len(level) == 0 {
+	processCommonArgs(args)
+
+	log.Debug("Arguments  ", cmdArgs)
+
+	if err := runCommand(cmd, cmdArgs); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+}
+
+func processCommonArgs(args map[string]interface{}) {
+	log.Debug("ARGs", args)
+	// set the logging level if passed in
+	if args["--loglevel"] == nil {
 		log.SetLevel("info")
 	} else {
-		log.SetLevel(level[0])
+		log.SetLevel(args["--loglevel"].(string))
 	}
 
 	if args["--debug"].(bool) == true {
@@ -63,40 +82,114 @@ paw subcommands:
 	if args["--quiet"].(bool) == true {
 		log.SetLevel("error")
 	}
-
-	log.Debug("Args: ", args)
-	log.Info("SubCommand ", cmd)
-	log.Info("Arguments  ", cmdArgs)
-
-	if err := runCommand(cmd, cmdArgs); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
 }
 
 // runCommand - this function routes to the appropriate function
 func runCommand(cmd string, args []string) (err error) {
-	//argv := make([]string, 1)
-	//argv[0] = cmd
-	//argv = append(argv, args...)
+	argv := make([]string, 1)
+	argv[0] = cmd
+	argv = append(argv, args...)
 	switch cmd {
 	case "list":
 		// subcommand is a function call
-		return pawList(args)
+		return pawList()
 	case "versions":
 		// subcommand is a script
-		return pawVersions(args)
+		return pawVersions()
 	case "run":
 		// subcommand is a script
-		return pawRun(args)
+		return pawRun()
 	case "env":
-		return printEnv(args)
+		return printEnv()
 	case "print":
-		return printManifest(args)
+		return printManifest(argv)
+	case "shell":
+		return pawShell()
 
 	}
 	return errors.New(fmt.Sprintf("%s is not a paw command. See 'paw help'", cmd))
+}
+
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
+func pawShell() error {
+	usage := `Usage: paw shell [options] <command> <version> [<args>...]
+
+paw run - execute the supplied command and version. Alternatively, you may supply an auxiliary
+command to run (cmd) in the versioned command's environment, which it gets from the manifest.
+ 
+Options:
+   -l, --loglevel=<level>
+   -d, --debug
+   -q, --quiet
+   -h, --help
+   -s, --shell=<shell>
+   `
+
+	args, _ := docopt.Parse(usage, nil, true, "", false)
+	processCommonArgs(args)
+
+	log.Debug("pawShell - args", args)
+
+	if args["<command>"] == nil || args["<version>"] == nil {
+		err := errors.New("wrong number of arguements. paw run <package> <version>")
+		return err
+	}
+
+	command := args["<command>"].(string)
+	version := args["<version>"].(string)
+
+	manifest, err := packwrap.NewManifestFor(command, version)
+	if err != nil {
+
+		return errors.New(fmt.Sprint(err.Error(), " args: ", command, " ", version))
+	}
+
+	if err = manifest.Setenv(); err != nil {
+		log.Fatal(err)
+
+	}
+
+	var shell string
+	if args["--shell"] == nil {
+		log.Debug("pawShell - setting shell default to bash")
+		shell = "bash"
+	} else {
+		shell = args["--shell"].(string)
+
+		if stringInSlice(shell, packwrap.VALID_SHELLS) == false {
+			log.Warningf("%s is not a valid shell. invoking %s", shell, packwrap.DEFAULT_SHELL)
+			shell = packwrap.DEFAULT_SHELL
+		} else {
+			log.Debugf("pawShell - shell set to: %s.",
+				shell)
+		}
+
+	}
+	// all supported shels take a -i flag to make them interactive
+	callingargs := []string{"-i"}
+	callingargs = append(callingargs, args["<args>"].([]string)...)
+
+	cmd := exec.Command(shell, callingargs...)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+
+	}
+
+	return nil
 }
 
 // readLines - helper function to slurp in a text file and return a list of
@@ -143,7 +236,21 @@ func printManifest(args []string) error {
 }
 
 // pawList - List the packages in the system.
-func pawList(args []string) error {
+func pawList() error {
+	usage := `Usage: paw list [options] 
+
+paw list - list the packages and the paths to their respective manifests.
+ 
+Options:
+   -l, --loglevel=<level>
+   -d, --debug
+   -q, --quiet
+   -h, --help
+   `
+	args, _ := docopt.Parse(usage, nil, true, "", false)
+
+	processCommonArgs(args)
+
 	lst := packwrap.GetPackageList()
 	fmt.Println()
 	for _, pack := range lst {
@@ -154,10 +261,27 @@ func pawList(args []string) error {
 
 // pawVersions - Lists package versions for a named package supplied as
 // the first arugment.
-func pawVersions(args []string) error {
-	versions := packwrap.GetPackageVersions(args[0])
+func pawVersions() error {
+
+	usage := `Usage: paw versions [options] <command> [<args>...]
+
+paw versions - list the versions for the provided command.
+ 
+Options:
+   -l, --loglevel=<level>
+   -d, --debug
+   -q, --quiet
+   -h, --help
+   `
+	args, _ := docopt.Parse(usage, nil, true, "", false)
+
+	if args["<command>"] == nil {
+		log.Fatal("Need to provide a command to look up versions for")
+	}
+	command := args["<command>"].(string)
+	versions := packwrap.GetPackageVersions(command)
 	if versions == nil {
-		log.Info("No Package Versions Found for ", args[0])
+		log.Info("No Package Versions Found for ", command)
 		return nil
 	}
 	fmt.Println()
@@ -172,15 +296,38 @@ func pawVersions(args []string) error {
 // Minimally, the args input consists of an executable name, and a version. This
 // fucntion initializes the environment based on a manifest for the supplied package
 // and version, and then executes it in a separate process.
-func pawRun(args []string) error {
-	if len(args) < 2 {
+func pawRun() error {
+	usage := `Usage: paw run [options] <command> <version> [<args>...]
+
+paw run - execute the supplied command and version. Alternatively, you may supply an auxiliary
+command to run (cmd) in the versioned command's environment, which it gets from the manifest.
+ 
+Options:
+   -l, --loglevel=<level>
+   -d, --debug
+   -q, --quiet
+   -h, --help
+   -c, --cmd=<cmd>  execute a command using the environment from the supplied manifest environment. 
+   `
+
+	args, _ := docopt.Parse(usage, nil, true, "", false)
+	log.Debug("pawRun args", args)
+
+	if args["<command>"] == nil || args["<version>"] == nil {
 		err := errors.New("wrong number of arguements. paw run <package> <version>")
 		return err
 	}
-	manifest, err := packwrap.NewManifestFor(args[0], args[1])
+
+	command := args["<command>"].(string)
+	version := args["<version>"].(string)
+
+	manifest, err := packwrap.NewManifestFor(command, version)
 	if err != nil {
-		return err
+
+		return errors.New(fmt.Sprint(err.Error(), " args: ", command, " ", version))
 	}
+
+	processCommonArgs(args)
 
 	//err = manifest.Setenv()
 	if err = manifest.Setenv(); err != nil {
@@ -188,18 +335,19 @@ func pawRun(args []string) error {
 
 	}
 	//_ = sp
-	remainingArgs := []string{}
-
-	if len(args) > 2 {
-		remainingArgs = args[2:]
-	}
+	remainingArgs := args["<args>"].([]string)
 
 	cmd := exec.Command(manifest.Name, remainingArgs...)
+	if runcmd := args["--cmd"]; runcmd != nil {
+		runcmd := args["--cmd"].(string)
+		log.Debugf("pawRun exec.Command %s", runcmd)
+		cmd = exec.Command(runcmd, remainingArgs...)
+	}
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	log.Info("Running", manifest.Name, " Version: ", manifest.Version())
-	log.Info(manifest.Name, remainingArgs)
+	log.Info("pawRun executing ", manifest.Name, " Version: ", manifest.Version(), " args:", remainingArgs)
 
 	err = cmd.Run()
 	if err != nil {
@@ -212,13 +360,31 @@ func pawRun(args []string) error {
 
 // printEnv - given a string slice of arguments to the env command, lad
 // the package and print it out
-func printEnv(args []string) error {
-	if len(args) < 2 {
-		err := errors.New("wrong number of arguements. paw env <package> <version>")
+func printEnv() error {
+	usage := `Usage: paw env [options] <command> <version> [<args>...]
+
+paw env - execute the supplied command and version. Alternatively, you may supply an auxiliary
+command to run (cmd) in the versioned command's environment, which it gets from the manifest.
+ 
+Options:
+   -l, --loglevel=<level>
+   -d, --debug
+   -q, --quiet
+   -h, --help
+   `
+
+	args, _ := docopt.Parse(usage, nil, true, "", false)
+	log.Debug("printEnv args", args)
+
+	if args["<command>"] == nil || args["<version>"] == nil {
+		err := errors.New("wrong number of arguments. paw env <package> <version>")
 		return err
 	}
 
-	manifest, err := packwrap.NewManifestFor(args[0], args[1])
+	command := args["<command>"].(string)
+	version := args["<version>"].(string)
+
+	manifest, err := packwrap.NewManifestFor(command, version)
 
 	if err != nil {
 		return err
