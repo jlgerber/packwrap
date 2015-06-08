@@ -191,7 +191,7 @@ func (m *Manifest) ReplaceLocalVars(s string) string {
 			ret = ret + s[idxB:idxF]
 			idxB = idxF
 
-			log.Debug("idxB ", idxB, "idxF ", idxF, " s ", s)
+			log.Debug("ReplaceLocalVars - idxB ", idxB, "idxF ", idxF, " s ", s)
 
 			inVar = true
 		} else {
@@ -200,14 +200,14 @@ func (m *Manifest) ReplaceLocalVars(s string) string {
 	}
 	// we have reached the end. account for the remaining data
 	if idxB < len(s)-1 {
-		log.Debug("End of loop idxB", idxB, " last idx of s ", len(s)-1)
+		log.Debug("ReplaceLocalVars - End of loop idxB", idxB, " last idx of s ", len(s)-1)
 		// once last lookup
 		if inVar == true {
-			log.Debug("End of loop inVar is true")
+			log.Debug("ReplaceLocalVars - End of loop inVar is true")
 
 			lookup := strings.Title(strings.Trim(string(s[idxB+1:len(s)]), "$"))
 
-			log.Debug("Attempting to get field for >", lookup, "<")
+			log.Debug("ReplaceLocalVars - Attempting to get field for >", lookup, "<")
 
 			newval, err := m.GetStringField(lookup)
 			if err != nil {
@@ -244,7 +244,7 @@ func (m *Manifest) Setenv() error {
 		if err != nil {
 			return err
 		}
-		log.Debug("Post", key, "=", value)
+		log.Debug("Setenv - Post", key, "=", value)
 	}
 	return nil
 }
@@ -291,7 +291,7 @@ func (m *Manifest) GetStringField(val string) (string, error) {
 	default:
 		fmt.Println("kind of t", v.Kind())
 	}
-	return "", errors.New("Unable to convert field to type")
+	return "", errors.New("GetStringField - Unable to convert field to type")
 }
 
 //----------------------------

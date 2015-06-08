@@ -139,7 +139,7 @@ Options:
 	log.Debug("pawShell - args", args)
 
 	if args["<command>"] == nil || args["<version>"] == nil {
-		err := errors.New("wrong number of arguements. paw run <package> <version>")
+		err := errors.New("pawShell - wrong number of arguements. paw run <package> <version>")
 		return err
 	}
 
@@ -165,7 +165,7 @@ Options:
 		shell = args["--shell"].(string)
 
 		if stringInSlice(shell, packwrap.VALID_SHELLS) == false {
-			log.Warningf("%s is not a valid shell. invoking %s", shell, packwrap.DEFAULT_SHELL)
+			log.Warningf("pawShell - %s is not a valid shell. invoking %s", shell, packwrap.DEFAULT_SHELL)
 			shell = packwrap.DEFAULT_SHELL
 		} else {
 			log.Debugf("pawShell - shell set to: %s.",
@@ -276,12 +276,12 @@ Options:
 	args, _ := docopt.Parse(usage, nil, true, "", false)
 
 	if args["<command>"] == nil {
-		log.Fatal("Need to provide a command to look up versions for")
+		log.Fatal("pawVersions - Need to provide a command to look up versions for")
 	}
 	command := args["<command>"].(string)
 	versions := packwrap.GetPackageVersions(command)
 	if versions == nil {
-		log.Info("No Package Versions Found for ", command)
+		log.Info("pawVersions - No Package Versions Found for ", command)
 		return nil
 	}
 	fmt.Println()
@@ -314,7 +314,7 @@ Options:
 	log.Debug("pawRun args", args)
 
 	if args["<command>"] == nil || args["<version>"] == nil {
-		err := errors.New("wrong number of arguements. paw run <package> <version>")
+		err := errors.New("pawRun - wrong number of arguements. paw run <package> <version>")
 		return err
 	}
 
@@ -324,7 +324,7 @@ Options:
 	manifest, err := packwrap.NewManifestFor(command, version)
 	if err != nil {
 
-		return errors.New(fmt.Sprint(err.Error(), " args: ", command, " ", version))
+		return errors.New(fmt.Sprint("pawRiun - ", err.Error(), " args: ", command, " ", version))
 	}
 
 	processCommonArgs(args)
@@ -340,14 +340,14 @@ Options:
 	cmd := exec.Command(manifest.Name, remainingArgs...)
 	if runcmd := args["--cmd"]; runcmd != nil {
 		runcmd := args["--cmd"].(string)
-		log.Debugf("pawRun exec.Command %s", runcmd)
+		log.Debugf("pawRun - exec.Command %s", runcmd)
 		cmd = exec.Command(runcmd, remainingArgs...)
 	}
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	log.Info("pawRun executing ", manifest.Name, " Version: ", manifest.Version(), " args:", remainingArgs)
+	log.Info("pawRun - executing ", manifest.Name, " Version: ", manifest.Version(), " args:", remainingArgs)
 
 	err = cmd.Run()
 	if err != nil {
@@ -374,10 +374,10 @@ Options:
    `
 
 	args, _ := docopt.Parse(usage, nil, true, "", false)
-	log.Debug("printEnv args", args)
+	log.Debug("printEnv -cargs", args)
 
 	if args["<command>"] == nil || args["<version>"] == nil {
-		err := errors.New("wrong number of arguments. paw env <package> <version>")
+		err := errors.New("printEnv - wrong number of arguments. paw env <package> <version>")
 		return err
 	}
 
