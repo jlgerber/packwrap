@@ -9,7 +9,8 @@ import (
 
 // pawPrint - Given the name and version of a particular executable, find its
 // manifest and print its contents.
-func pawPrint() error {
+func pawPrint(manifestLocator *packwrap.ManifestLocator,
+	manifestReaderFactory *packwrap.ManifestReaderFactory) error {
 	usage := `Usage: paw print [options] <command> <version>
 
 paw print - print the contents of a specific manifest.
@@ -32,8 +33,9 @@ Options:
 	command := args["<command>"].(string)
 	version := args["<version>"].(string)
 
-	manifest, err := packwrap.GetManifestLocationFor(command, version)
+	manifest, err := manifestLocator.GetManifestLocationFor(command, version)
 	if err != nil {
+		log.Errorf("manifestLocator.GetManifestLocationFor(\"%s\", \"%s\") failed", command, version)
 		return err
 	}
 

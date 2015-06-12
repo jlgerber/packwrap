@@ -7,6 +7,11 @@ import (
 	"os"
 )
 
+/*
+Main entry point for paw commands. The command may be extended by registering additional subcommands
+in the helpers.createSubcmdRunner function. The command may also be extended by registering additional
+manifest readers ( to, say, add support for different formats ) in the helpers.createSubcmdRunner function.
+*/
 // retrieve the looger and make it available in the main namespace.
 var log = packwrap.GetLogger()
 
@@ -45,6 +50,8 @@ paw subcommands:
 
 	cmd := args["<command>"].(string)
 	cmdArgs := args["<args>"].([]string)
+
+	// create the manifest locator, fetching the keys from subcommand runner
 
 	// set the logging level if passed in
 	processCommonArgs(args)

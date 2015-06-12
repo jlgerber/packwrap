@@ -9,7 +9,8 @@ import (
 
 // pawEnv - given a string slice of arguments to the env command, lad
 // the package and print it out
-func pawEnv() error {
+func pawEnv(manifestLocator *packwrap.ManifestLocator,
+	manifestReaderFactory *packwrap.ManifestReaderFactory) error {
 	usage := `Usage: paw env [options] <command> <version> [<args>...]
 
 paw env - execute the supplied command and version. Alternatively, you may supply an auxiliary
@@ -33,9 +34,16 @@ Options:
 	command := args["<command>"].(string)
 	version := args["<version>"].(string)
 
-	manifest, err := packwrap.NewManifestFor(command, version)
-
+	// find manifest
+	location, err := manifestLocator.GetManifestLocationFor(command, version)
 	if err != nil {
+		log.Errorf("manifestLocator.GetManifestLocationFor(%s,%s) failed", command, version)
+		return err
+	}
+	// get instance of manifest given a valid location
+	manifest, err := manifestReaderFactory.NewManifestFor(location)
+	if err != nil {
+		log.Errorf("manifestReaderFactory.NewManifestFor(%s) failed to return manifest", location)
 		return err
 	}
 

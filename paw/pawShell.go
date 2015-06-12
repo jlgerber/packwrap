@@ -5,14 +5,15 @@ pawShell - subcommand to invoke a subshell with an executable's environment
 */
 import (
 	"errors"
-	"fmt"
+	//"fmt"
 	"github.com/docopt/docopt-go"
 	"github.com/jlgerber/packwrap"
 	"os"
 	"os/exec"
 )
 
-func pawShell() error {
+func pawShell(manifestLocator *packwrap.ManifestLocator,
+	manifestReaderFactory *packwrap.ManifestReaderFactory) error {
 	usage := `Usage: paw shell [options] <command> <version> [<args>...]
 
 paw run - execute the supplied command and version. Alternatively, you may supply an auxiliary
@@ -39,15 +40,19 @@ Options:
 	command := args["<command>"].(string)
 	version := args["<version>"].(string)
 
-	manifest, err := packwrap.NewManifestFor(command, version)
+	// find manifest
+	location, err := manifestLocator.GetManifestLocationFor(command, version)
 	if err != nil {
-
-		return errors.New(fmt.Sprint(err.Error(), " args: ", command, " ", version))
+		return err
+	}
+	// get instance of manifest given a valid location
+	manifest, err := manifestReaderFactory.NewManifestFor(location)
+	if err != nil {
+		return err
 	}
 
 	if err = manifest.Setenv(); err != nil {
 		log.Fatal(err)
-
 	}
 
 	var shell string

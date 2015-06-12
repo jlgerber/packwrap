@@ -3,13 +3,17 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/jlgerber/packwrap"
 	"os"
 	"sort"
 	"strings"
 )
 
+// processCommonArgs - modify the logging level based on args argument, which has been
+// generated with docopt.
 func processCommonArgs(args map[string]interface{}) {
 	log.Debug("paw.processCommonArgs - ", args)
+
 	// set the logging level if passed in
 	if args["--loglevel"] == nil {
 		log.SetLevel("info")
@@ -26,6 +30,8 @@ func processCommonArgs(args map[string]interface{}) {
 	}
 }
 
+// stringInSlice - convenience function to determine if the supplied string is
+// one of the elements in the supplied slice.
 func stringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {
@@ -52,9 +58,18 @@ func readLines(path string) ([]string, error) {
 	return lines, scanner.Err()
 }
 
+// createSubcmdRunner - Convenience function to create the subcmdRunner instance.
+// This function does the following:
+// * instantiates a new SubcmdRunner
+// * registers subcommands
+// * instantiates new ManifestReaderFactory
+// * registers readers with factory
+// * instantiates new manifestLocator passing in manifestReaderFactory.keys()
+// * registers the manifestReaderFactory instance with the subcmdRunner
+// * registers the manifestLocator with the subcmdRunner
 func createSubcmdRunner() *SubcmdRunner {
+	// create subcommand runner and register subcommands
 	subcmdRunner := NewSubcmdRunner()
-
 	subcmdRunner.RegisterSubcmd("list", "List available packages.", pawList)
 	subcmdRunner.RegisterSubcmd("versions", "List available versions for a package.", pawVersions)
 	subcmdRunner.RegisterSubcmd("run", "Run a package.", pawRun)
@@ -62,17 +77,30 @@ func createSubcmdRunner() *SubcmdRunner {
 	subcmdRunner.RegisterSubcmd("print", "Print the environment for a package.", pawPrint)
 	subcmdRunner.RegisterSubcmd("shell", "Drop down into a subshell with appropriate environment.", pawShell)
 
+	// create manifest reader factory and register reader instances
+	manifestReaderFactory := packwrap.NewManifestReaderFactory()
+	manifestReaderFactory.AddReader("json", &packwrap.JsonManifestReader{})
+
+	// create manifest locator with appropriate extensions
+	manifestLocator := packwrap.NewManifestLocator(manifestReaderFactory.Keys())
+
+	// register manifest locator and manifest reader factory with subcommand runner.
+	subcmdRunner.RegisterManifestLocator(manifestLocator)
+	subcmdRunner.RegisterManifestReaderFactory(manifestReaderFactory)
+
 	return subcmdRunner
 }
 
+// generateSubcmdString - helper function to generate the padded subcommand string used in the usage docs.
 func generateSubcmdString(s *SubcmdRunner) string {
 	maxlen := s.MaxNameLength()
 	retstr := ""
+
 	sortedKeys := s.Keys()
 	sort.Strings(sortedKeys)
+
 	for _, key := range sortedKeys {
 		retstr += fmt.Sprintf("  %s%s    %s\n", key, strings.Repeat(" ", maxlen-len(key)), s.GetDesc(key))
 	}
-
 	return retstr
 }

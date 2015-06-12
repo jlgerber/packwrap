@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"fmt"
+	//"fmt"
 	"github.com/docopt/docopt-go"
 	"github.com/jlgerber/packwrap"
 	"os"
@@ -13,7 +13,8 @@ import (
 // Minimally, the args input consists of an executable name, and a version. This
 // fucntion initializes the environment based on a manifest for the supplied package
 // and version, and then executes it in a separate process.
-func pawRun() error {
+func pawRun(manifestLocator *packwrap.ManifestLocator,
+	manifestReaderFactory *packwrap.ManifestReaderFactory) error {
 	usage := `Usage: paw run [options] <command> <version> [<args>...]
 
 paw run - execute the supplied command and version. Alternatively, you may supply an auxiliary
@@ -38,15 +39,19 @@ Options:
 	command := args["<command>"].(string)
 	version := args["<version>"].(string)
 
-	manifest, err := packwrap.NewManifestFor(command, version)
+	// find manifest
+	location, err := manifestLocator.GetManifestLocationFor(command, version)
 	if err != nil {
-
-		return errors.New(fmt.Sprint("pawRiun - ", err.Error(), " args: ", command, " ", version))
+		return err
+	}
+	// get instance of manifest given a valid location
+	manifest, err := manifestReaderFactory.NewManifestFor(location)
+	if err != nil {
+		return err
 	}
 
 	processCommonArgs(args)
 
-	//err = manifest.Setenv()
 	if err = manifest.Setenv(); err != nil {
 		log.Fatal(err)
 

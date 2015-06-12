@@ -15,8 +15,26 @@ type ManifestLocator struct {
 // NewManifestLocator - constructor function. Given a string slice containing valid extensions, initialize
 // the ManifestLocator.
 func NewManifestLocator(extensions []string) *ManifestLocator {
-
 	return &ManifestLocator{extensions: extensions}
+}
+
+func (m *ManifestLocator) GetPackageList() []string {
+	rl := []string{}
+	searchPath := m.GetManifestSearchPath()
+	for _, path := range searchPath {
+		info, err := ioutil.ReadDir(path)
+		if err != nil {
+			log.Debug(err)
+			continue
+		}
+		for _, pack := range info {
+			if string(pack.Name()[0]) == "." {
+				continue
+			}
+			rl = append(rl, fmt.Sprintf("%s    %s", pack.Name(), path))
+		}
+	}
+	return rl
 }
 
 // GetManifestSearchPathFor - returns the search path for
@@ -35,7 +53,7 @@ func (m *ManifestLocator) GetManifestSearchPath() []string {
 // GetPackageVersions - given a package name, find all of the versions
 // of the package and return them as a list
 func (m *ManifestLocator) GetPackageVersions(packageName string) []*PackageVersion {
-	searchPath := GetManifestSearchPath()
+	searchPath := m.GetManifestSearchPath()
 
 	versions := make([]*PackageVersion, 0)
 
@@ -62,12 +80,13 @@ func (m *ManifestLocator) GetPackageVersions(packageName string) []*PackageVersi
 // an error code and full path to the manifest assuming
 // the returned error is nil.
 func (m *ManifestLocator) GetManifestLocationFor(packageName, packageVersion string) (string, error) {
-	manifestPath := GetManifestSearchPath()
+	manifestPath := m.GetManifestSearchPath()
 
 	for _, path := range manifestPath {
 		for _, extension := range m.extensions {
 			manifest := fmt.Sprintf("%s/%s/%s/manifest.%s", path, packageName, packageVersion, extension)
 			//fmt.Println("searching", manifest)
+			log.Debugf("GetManifestLocationFor(%s, %s) - searching %s", packageName, packageVersion, manifest)
 			if _, err := os.Stat(manifest); err == nil {
 				return manifest, nil
 			}
