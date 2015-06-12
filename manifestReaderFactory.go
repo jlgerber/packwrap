@@ -29,6 +29,7 @@ func (m *ManifestReaderFactory) AddReader(name string, value ManifestReader) {
 	m.funcs[name] = value
 }
 
+// HasReaderFor - tests wether the supplied format name is supported by the factory.
 func (m *ManifestReaderFactory) HasReaderFor(name string) bool {
 	_, ok := m.funcs[name]
 	return ok
