@@ -2,6 +2,7 @@ package packwrap
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"reflect"
 	"testing"
@@ -19,14 +20,13 @@ func setup(m *testing.M, manifestPath string, manifestName string, contents []by
 
 	fh, err := os.Create(manifest)
 	if err != nil {
-		log.Fatalf("os.Create failed %s %s", manifest, err)
+		log.Fatal("Unabl to create manifest")
 	}
 
 	_, err = fh.Write(contents)
 	if err != nil {
-		log.Fatal("unable to write manifest")
+		log.Fatal("unable to write contents of manifest to file")
 	}
-
 	return manifest
 }
 
@@ -125,10 +125,8 @@ func TestManifest_NewManifestFromJsonByteSlice(t *testing.T) {
 		"url":"http://blabla",
 		"environ":["H","/foo/bar/bla","HBIN","${H}/bin"]}`)
 	_, err := NewManifestFromJsonByteSlice(md)
-	if err != nil {
-		t.Error(err)
 
-	}
+	assert.Nil(t, err)
 
 }
 
@@ -210,18 +208,21 @@ func TestManifest_NewManifestFromJsonFile(t *testing.T) {
 func TestManifest_ReplaceLocalVars(t *testing.T) {
 
 	jsonFile := os.Getenv("TESTMANIFEST")
-	println(jsonFile)
+	//println(jsonFile)
 	manifest, err := NewManifestFromJsonFile(jsonFile)
 	if err != nil {
 		t.Error(err)
 	}
 	val := manifest.ReplaceLocalVars("$$basepath/fff")
-	fmt.Println("$$basepath/foo", val)
+	//fmt.Println("$$basepath/foo", val)
+	assert.Equal(t, "/Library/Frameworks/Houdini.framework/Versions/14.0.335/Resources/fff", val)
 
 	val = manifest.ReplaceLocalVars("foo/$$basepath")
-	fmt.Println("foo/$$basepath", val)
+	//fmt.Println("foo/$$basepath", val)
+	assert.Equal(t, "foo/Library/Frameworks/Houdini.framework/Versions/14.0.335/Resources", val)
 
 	val = manifest.ReplaceLocalVars("foo/$$basepath/bar")
-	fmt.Println("foo/$$basepath/bar", val)
+	//fmt.Println("foo/$$basepath/bar", val)
+	assert.Equal(t, "foo/Library/Frameworks/Houdini.framework/Versions/14.0.335/Resources/bar", val)
 
 }

@@ -218,7 +218,6 @@ func (m *Manifest) ReplaceLocalVars(s string) string {
 			ret = ret + s[idxB:]
 		}
 	}
-
 	return ret
 }
 

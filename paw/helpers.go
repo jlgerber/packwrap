@@ -2,7 +2,10 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
+	"sort"
+	"strings"
 )
 
 func processCommonArgs(args map[string]interface{}) {
@@ -47,4 +50,29 @@ func readLines(path string) ([]string, error) {
 		lines = append(lines, scanner.Text())
 	}
 	return lines, scanner.Err()
+}
+
+func createSubcmdRunner() *SubcmdRunner {
+	subcmdRunner := NewSubcmdRunner()
+
+	subcmdRunner.RegisterSubcmd("list", "List available packages.", pawList)
+	subcmdRunner.RegisterSubcmd("versions", "List available versions for a package.", pawVersions)
+	subcmdRunner.RegisterSubcmd("run", "Run a package.", pawRun)
+	subcmdRunner.RegisterSubcmd("env", "Print the environment for a package.", pawEnv)
+	subcmdRunner.RegisterSubcmd("print", "Print the environment for a package.", pawPrint)
+	subcmdRunner.RegisterSubcmd("shell", "Drop down into a subshell with appropriate environment.", pawShell)
+
+	return subcmdRunner
+}
+
+func generateSubcmdString(s *SubcmdRunner) string {
+	maxlen := s.MaxNameLength()
+	retstr := ""
+	sortedKeys := s.Keys()
+	sort.Strings(sortedKeys)
+	for _, key := range sortedKeys {
+		retstr += fmt.Sprintf("  %s%s    %s\n", key, strings.Repeat(" ", maxlen-len(key)), s.GetDesc(key))
+	}
+
+	return retstr
 }

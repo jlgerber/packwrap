@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"github.com/docopt/docopt-go"
 	"github.com/jlgerber/packwrap"
@@ -26,14 +25,10 @@ Options:
    -h, --help
    
 paw subcommands:
-   list       List available packages.
-   versions   List available versions for a package.
-   run        Run a package.
-   env        Print the environment for a package.
-   print      Prints the manifest for a package version.
-   template   Prints the manifest template.
-   shell      Drop down into a subshell with appropriate environment.
-   `
+`
+
+	subcmdRunner := createSubcmdRunner()
+	usage += generateSubcmdString(subcmdRunner)
 
 	args, err := docopt.Parse(usage, nil, true, "", true)
 
@@ -56,30 +51,9 @@ paw subcommands:
 
 	log.Debug("paw - Arguments  ", cmdArgs)
 
-	if err := runCommand(cmd, cmdArgs); err != nil {
+	//if err := runCommand(cmd, cmdArgs); err != nil {
+	if err := subcmdRunner.Run(cmd); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-}
-
-// runCommand - this function routes calls to the appropriate subcommand.
-func runCommand(cmd string, args []string) (err error) {
-	// argv := make([]string, 1)
-	// argv[0] = cmd
-	// argv = append(argv, args...)
-	switch cmd {
-	case "list":
-		return pawList()
-	case "versions":
-		return pawVersions()
-	case "run":
-		return pawRun()
-	case "env":
-		return pawEnv()
-	case "print":
-		return pawPrint()
-	case "shell":
-		return pawShell()
-	}
-	return errors.New(fmt.Sprintf("%s is not a paw command. See 'paw help'", cmd))
 }
