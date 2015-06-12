@@ -1,6 +1,11 @@
 package packwrap
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"path/filepath"
+	"strings"
+)
 
 type InvalidManifestReader struct{}
 
@@ -9,7 +14,8 @@ func (i InvalidManifestReader) NewManifestFromFile(f string) (*Manifest, error) 
 }
 
 type ManifestReaderFactory struct {
-	funcs map[string]ManifestReader
+	funcs map[string]ManifestReader //manifest reader is an interface.
+
 }
 
 func NewManifestReaderFactory() *ManifestReaderFactory {
@@ -17,6 +23,8 @@ func NewManifestReaderFactory() *ManifestReaderFactory {
 
 }
 
+// AddReader - vaue is an interface, so you should treat it as a pointer.
+// pass an address
 func (m *ManifestReaderFactory) AddReader(name string, value ManifestReader) {
 	m.funcs[name] = value
 }
@@ -35,4 +43,19 @@ func (m *ManifestReaderFactory) GetReaderFor(name string) ManifestReader {
 	}
 	imr := InvalidManifestReader{}
 	return imr
+}
+
+// NewManifestFor - Given the path to a manifest, return a pointer to an instance of
+// Manifest and an error. If successful, the error will be nil, otherwise, the manifest
+// pointer will be nil and the error will not be...
+func (m *ManifestReaderFactory) NewManifestFor(path string) (*Manifest, error) {
+	format := strings.Trim(filepath.Ext(path), ".")
+
+	if m.HasReaderFor(format) == false {
+		return nil, errors.New(fmt.Sprintf("ManifestReaderFactory.NewManifestFor - no reader for '%s'", format))
+	}
+
+	reader := m.GetReaderFor(format)
+
+	return reader.NewManifestFromFile(path)
 }
