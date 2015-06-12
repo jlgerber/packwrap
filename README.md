@@ -8,7 +8,7 @@ Packwrap is designed to solve a couple of common problems in VFX. Namely, it aim
 
 ### Environment Initialization
 
-The first problem packwrap tackles is coming up with a system for initializing the application environment. Since most DCCs can and need to be customized via scores of environment variables, creating a tool for setting them is one of the first orders of business for any new pipeline. Historically, this has been accomplished via in a scripting language - either sh,  Python or Perl if you go back far enough. 
+The first problem packwrap tackles is coming up with a system for initializing the application environment. Since most DCCs can and need to be customized via scores of environment variables, creating a tool for setting them is one of the first orders of business for any new pipeline. Historically, this has been accomplished via a scripting language - either sh,  Python or Perl if you go back far enough. 
 
 ## Components
 
@@ -21,6 +21,8 @@ The first problem packwrap tackles is coming up with a system for initializing t
 * paw run  houdini 14.0.335
 * paw list
 * paw versions maya
+* paw print maya 2017.0.1
+* paw shell maya 2017.0.1
 
 ### example structure
 
