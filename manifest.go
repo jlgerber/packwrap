@@ -13,63 +13,6 @@ import (
 	"text/template"
 )
 
-// GetManifestSearchPathFor - returns the search path for
-// the provided package
-func GetManifestSearchPath() []string {
-
-	manifestPath := DEFAULT_MANIFEST_LOCATION
-
-	if manpath := os.Getenv(ENVVAR_MANIFESTPATH); manpath != "" {
-		manifestPath = manpath + ":" + manifestPath
-	}
-
-	return strings.Split(manifestPath, ":")
-}
-
-// GetPackageVersions - given a package name, find all of the versions
-// of the package and return them as a list
-func GetPackageVersions(packageName string) []*PackageVersion {
-	searchPath := GetManifestSearchPath()
-
-	versions := make([]*PackageVersion, 0)
-
-	for _, path := range searchPath {
-		packagePath := path + "/" + packageName
-
-		info, err := ioutil.ReadDir(packagePath)
-		if err != nil {
-			log.Debug(err)
-			continue
-		}
-		for _, version := range info {
-			if string(version.Name()[0]) == "." {
-				continue
-			}
-			versions = append(versions,
-				NewPackageVersion(packageName, version.Name(), path))
-		}
-	}
-	return versions
-}
-
-//GetManifestFor - given the name of a package, return
-// an error code and full path to the manifest assuming
-// the returned error is nil.
-func GetManifestLocationFor(packageName, packageVersion string) (string, error) {
-	manifestPath := GetManifestSearchPath()
-
-	for _, path := range manifestPath {
-		manifest :=
-			fmt.Sprintf("%s/%s/%s/manifest%s", path, packageName, packageVersion, Extension)
-		//fmt.Println("searching", manifest)
-		if _, err := os.Stat(manifest); err == nil {
-			return manifest, nil
-		}
-	}
-
-	return "", errors.New("Unable to find manifest.")
-}
-
 //--------------------------
 // Types
 //--------------------------
@@ -88,21 +31,6 @@ type Manifest struct {
 	// not be set by the user.
 	_version    *template.Template // rendered template. Handled internally
 	_versionstr string             // private copy of the version string
-}
-
-// NewManifestFor - AlternateConstructor
-func NewManifestFor(packageName, packageVersion string) (*Manifest, error) {
-	manifestLocation, err := GetManifestLocationFor(packageName, packageVersion)
-	if err != nil {
-		return nil, err
-	}
-
-	manifest, err := NewManifestFromJsonFile(manifestLocation)
-
-	if err != nil {
-		return nil, err
-	}
-	return manifest, nil
 }
 
 //---------------------------
@@ -142,26 +70,8 @@ func (m *Manifest) Version() string {
 	if err := m._version.Execute(&outp, m); err != nil {
 		panic(err)
 	}
-
 	return outp.String()
 }
-
-// func (m *Manifest) ReplaceLocalVarsOld(s string) string {
-// 	vals := strings.Fields(s)
-// 	for i := range vals {
-// 		if strings.HasPrefix(vals[i], "$$") {
-// 			lookup := strings.Title(string(vals[i][2:]))
-// 			newval, err := m.GetStringField(lookup)
-// 			if err != nil {
-// 				panic(err)
-// 			}
-// 			vals[i] = newval
-// 		}
-// 	}
-
-// 	newstr := strings.Join(vals, " ")
-// 	return newstr
-// }
 
 // replacement function
 // ReplaceLocalVars - given a string with one or more
@@ -315,6 +225,5 @@ func NewManifestFromJsonFile(jsonFile string) (*Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return NewManifestFromJsonByteSlice(contents)
 }

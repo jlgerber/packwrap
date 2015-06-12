@@ -7,7 +7,8 @@ import (
 )
 
 // pawList - List the packages in the system.
-func pawList() error {
+func pawList(manifestLocator *packwrap.ManifestLocator,
+	manifestReaderFactory *packwrap.ManifestReaderFactory) error {
 	usage := `Usage: paw list [options] 
 
 paw list - list the packages and the paths to their respective manifests.
@@ -22,7 +23,7 @@ Options:
 
 	processCommonArgs(args)
 
-	lst := packwrap.GetPackageList()
+	lst := manifestLocator.GetPackageList()
 	fmt.Println()
 	for _, pack := range lst {
 		fmt.Println(pack)

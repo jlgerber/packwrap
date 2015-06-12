@@ -8,7 +8,8 @@ import (
 
 // pawVersions - Lists package versions for a named package supplied as
 // the first arugment.
-func pawVersions() error {
+func pawVersions(manifestLocator *packwrap.ManifestLocator,
+	manifestReaderFactory *packwrap.ManifestReaderFactory) error {
 
 	usage := `Usage: paw versions [options] <command> [<args>...]
 
@@ -26,7 +27,8 @@ Options:
 		log.Fatal("pawVersions - Need to provide a command to look up versions for")
 	}
 	command := args["<command>"].(string)
-	versions := packwrap.GetPackageVersions(command)
+
+	versions := manifestLocator.GetPackageVersions(command)
 	if versions == nil {
 		log.Info("pawVersions - No Package Versions Found for ", command)
 		return nil

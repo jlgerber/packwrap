@@ -35,6 +35,14 @@ func (m *ManifestReaderFactory) HasReaderFor(name string) bool {
 	return ok
 }
 
+func (m *ManifestReaderFactory) Keys() []string {
+	keys := make([]string, 0, len(m.funcs))
+	for k := range m.funcs {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 // GetReaderFor - get teh manifest reader for the provided name. If an invalid
 // name is provided, return an instance of InvalidManifestReader.
 func (m *ManifestReaderFactory) GetReaderFor(name string) ManifestReader {

@@ -20,7 +20,7 @@ func setup(m *testing.M, manifestPath string, manifestName string, contents []by
 
 	fh, err := os.Create(manifest)
 	if err != nil {
-		log.Fatal("Unabl to create manifest")
+		log.Fatal("Unable to create manifest")
 	}
 
 	_, err = fh.Write(contents)
