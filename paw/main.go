@@ -51,8 +51,6 @@ paw subcommands:
 	cmd := args["<command>"].(string)
 	cmdArgs := args["<args>"].([]string)
 
-	// create the manifest locator, fetching the keys from subcommand runner
-
 	// set the logging level if passed in
 	processCommonArgs(args)
 
