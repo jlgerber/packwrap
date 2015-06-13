@@ -26,9 +26,9 @@ The first problem packwrap tackles is coming up with a system for initializing t
 
 ### example structure
 
-manifest/
-    modo/
-        801.0.0/manifest.yaml
-	    901.0.0/manifest.yaml
-	houdiini/
-	    14.0.335/manifest.yaml
+     manifest/
+        modo/
+            801.0.0/manifest.yaml
+	        901.0.0/manifest.yaml
+	    houdiini/
+	        14.0.335/manifest.yaml
